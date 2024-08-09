@@ -1,5 +1,5 @@
 blueprint:
-  name: Rollo-Steuerung basierend auf Zeit, Sonnenstand und Sensoren
+  name: Rollo-Steuerung basierend auf Wecker, Sonnenstand und Sensoren
   description: Automatisiere Rollos basierend auf Sonnenstand, Wecker, Temperatur und anderen Sensoren.
   domain: automation
   input:
@@ -31,7 +31,7 @@ blueprint:
         entity:
           domain: input_boolean
 
-    # Abschnitt 4: Verzögerung nach dem Wecker (kann positiv oder negativ sein)
+    # Abschnitt 4: Verzögerung für Sonnenaufgang (kann positiv oder negativ sein)
     verzögerung_sonnenaufgang:
       name: Verzögerung für Sonnenaufgang (in Minuten)
       selector:
@@ -172,4 +172,5 @@ action:
     target: !input benachrichtigungsgerät
     data:
       message: >
-        {{ trigger.entity_id }} h
+        {{ trigger.entity_id }} hat das Rollo geöffnet/geschlossen, weil {{ trigger.to_state.state }}
+
