@@ -140,17 +140,17 @@ blueprint:
 variables:
   fruehester_wecker: >
     {% set timestamps = [] %}
-    {% if states(input_boolean.wecker_1_aktiv) == 'on' %}
+    {% if states('input_boolean.wecker_1_aktiv') == 'on' %}
       {% set timestamps = timestamps + [states('sensor.wecker_1')] %}
     {% endif %}
-    {% if states(input_boolean.wecker_2_aktiv) == 'on' %}
+    {% if states('input_boolean.wecker_2_aktiv') == 'on' %}
       {% set timestamps = timestamps + [states('sensor.wecker_2')] %}
     {% endif %}
     {{ timestamps | min }}
 
 trigger:
-  - platform: time
-    at: !input fruehester_wecker
+  - platform: template
+    value_template: "{{ states('sensor.time') == (fruehester_wecker | as_timestamp | timestamp_custom('%H:%M', True)) }}"
 
   - platform: state
     entity_id: !input sonnensensor
@@ -169,21 +169,21 @@ action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ trigger.entity_id == 'sensor.sonnensensor' }}"
+            value_template: "{{ trigger.entity_id == sonnensensor }}"
         sequence:
           - service: cover.close_cover
             target: !input rollo
 
       - conditions:
           - condition: template
-            value_template: "{{ trigger.entity_id in ['sensor.wecker_1', 'sensor.wecker_2'] }}"
+            value_template: "{{ trigger.entity_id in [wecker_1, wecker_2] }}"
         sequence:
           - service: cover.open_cover
             target: !input rollo
 
       - conditions:
           - condition: template
-            value_template: "{{ trigger.entity_id == 'binary_sensor.fensterkontakt' and trigger.to_state.state == 'on' }}"
+            value_template: "{{ trigger.entity_id == fensterkontakt and trigger.to_state.state == 'on' }}"
         sequence:
           - service: cover.open_cover
             target: !input rollo
