@@ -45,25 +45,25 @@ blueprint:
         entity:
           domain: input_boolean
 
-    # Abschnitt 4: Verzögerung nach dem Wecker
+    # Abschnitt 4: Verzögerung nach dem Wecker (kann positiv oder negativ sein)
     verzögerung_sonnenaufgang:
       name: Verzögerung für Sonnenaufgang (in Minuten)
       selector:
         number:
-          min: 0
+          min: -120
           max: 120
           unit_of_measurement: "Minuten"
-          mode: slider
+          mode: box
 
-    # Abschnitt 5: Verzögerung für Sonnenuntergang
+    # Abschnitt 5: Verzögerung für Sonnenuntergang (kann positiv oder negativ sein)
     verzögerung_sonnenuntergang:
       name: Verzögerung für Sonnenuntergang (in Minuten)
       selector:
         number:
-          min: 0
+          min: -120
           max: 120
           unit_of_measurement: "Minuten"
-          mode: slider
+          mode: box
 
     # Abschnitt 6: Fensterkontakt
     fensterkontakt:
@@ -112,12 +112,11 @@ blueprint:
           unit_of_measurement: "°C"
           mode: box
 
-    # Abschnitt 8: Weitere Trigger
+    # Abschnitt 8: Weitere Trigger (wie in einer normalen Automation)
     weitere_trigger:
       name: Weitere Trigger
       selector:
-        entity:
-          domain: binary_sensor
+        trigger: {}
 
     # Abschnitt 9: Aktionen bei Rollo-Öffnen oder -Schließen
     aktion_bei_öffnen:
@@ -138,31 +137,29 @@ blueprint:
           integration: mobile_app
 
 trigger:
-  # Trigger für den ersten aktiven Wecker
+  # Trigger für Wecker 1 (mit Verzögerung)
   - platform: template
     value_template: >
       {{
-        (
-          states('input_boolean.wecker_1_aktiv') == 'on' and
-          now().timestamp() >= states('sensor.wecker_1') | as_timestamp(0)
-        ) or
-        (
-          states('input_boolean.wecker_2_aktiv') == 'on' and
-          now().timestamp() >= states('sensor.wecker_2') | as_timestamp(0)
-        )
+        states('input_boolean.wecker_1_aktiv') == 'on' and
+        now().timestamp() >= (states('sensor.wecker_1') | as_timestamp(0) + (60 * !input verzögerung_sonnenaufgang))
       }}
-    for:
-      minutes: !input verzögerung_sonnenaufgang
+
+  # Trigger für Wecker 2 (mit Verzögerung)
+  - platform: template
+    value_template: >
+      {{
+        states('input_boolean.wecker_2_aktiv') == 'on' and
+        now().timestamp() >= (states('sensor.wecker_2') | as_timestamp(0) + (60 * !input verzögerung_sonnenaufgang))
+      }}
 
   # Trigger für den Sonnenaufgang
   - platform: state
     entity_id: !input sonnensensor
     to: 'on'
 
-  # Trigger für zusätzliche Sensoren
-  - platform: state
-    entity_id: !input weitere_trigger
-    to: 'on'
+  # Weitere Trigger
+  - !input weitere_trigger
 
 condition:
   # Bedingung für den Fensterkontaktsensor
