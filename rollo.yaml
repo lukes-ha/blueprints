@@ -173,4 +173,3 @@ action:
     data:
       message: >
         {{ trigger.entity_id }} hat das Rollo geöffnet/geschlossen, weil {{ trigger.to_state.state }}
-
