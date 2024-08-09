@@ -128,7 +128,7 @@ trigger:
     value_template: >
       {{
         states('input_boolean.wecker_1_aktiv') == 'on' and
-        now().timestamp() >= (states('input_datetime.weckerzeit_luke') | as_timestamp(0) + (60 * !input verzögerung_sonnenaufgang))
+        now().timestamp() >= (states('input_datetime.weckerzeit_luke') | as_timestamp(0) + (60 * states('input.verzögerung_sonnenaufgang')))
       }}
 
   # Trigger für den Sonnenaufgang
