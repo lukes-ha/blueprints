@@ -141,7 +141,16 @@ trigger:
   # Trigger für den ersten aktiven Wecker
   - platform: template
     value_template: >
-      {{ (states('sensor.wecker_1') | as_timestamp(0) < states('sensor.wecker_2') | as_timestamp(0) and states('input_boolean.wecker_1_aktiv') == 'on') or (states('input_boolean.wecker_2_aktiv') == 'on') }}
+      {{
+        (
+          states('input_boolean.wecker_1_aktiv') == 'on' and
+          now().timestamp() >= states('sensor.wecker_1') | as_timestamp(0)
+        ) or
+        (
+          states('input_boolean.wecker_2_aktiv') == 'on' and
+          now().timestamp() >= states('sensor.wecker_2') | as_timestamp(0)
+        )
+      }}
     for:
       minutes: !input verzögerung_sonnenaufgang
 
