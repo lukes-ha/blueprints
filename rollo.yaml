@@ -18,29 +18,15 @@ blueprint:
         entity:
           domain: binary_sensor
 
-    # Abschnitt 3: Einstellung von Weckern mit Timestamps und Boolean
-    wecker_1:
-      name: Wecker 1
+    # Abschnitt 3: Einstellung der Weckzeit mit input_datetime
+    weckerzeit_luke:
+      name: Weckzeit Luke
       selector:
         entity:
-          domain: sensor
-          device_class: timestamp
+          domain: input_datetime
 
     wecker_1_aktiv:
-      name: Wecker 1 aktiv
-      selector:
-        entity:
-          domain: input_boolean
-
-    wecker_2:
-      name: Wecker 2
-      selector:
-        entity:
-          domain: sensor
-          device_class: timestamp
-
-    wecker_2_aktiv:
-      name: Wecker 2 aktiv
+      name: Wecker aktiv
       selector:
         entity:
           domain: input_boolean
@@ -137,20 +123,12 @@ blueprint:
           integration: mobile_app
 
 trigger:
-  # Trigger für Wecker 1 (mit Verzögerung)
+  # Trigger für die Weckzeit Luke (mit Verzögerung)
   - platform: template
     value_template: >
       {{
         states('input_boolean.wecker_1_aktiv') == 'on' and
-        now().timestamp() >= (states('sensor.wecker_1') | as_timestamp(0) + (60 * !input verzögerung_sonnenaufgang))
-      }}
-
-  # Trigger für Wecker 2 (mit Verzögerung)
-  - platform: template
-    value_template: >
-      {{
-        states('input_boolean.wecker_2_aktiv') == 'on' and
-        now().timestamp() >= (states('sensor.wecker_2') | as_timestamp(0) + (60 * !input verzögerung_sonnenaufgang))
+        now().timestamp() >= (states('input_datetime.weckerzeit_luke') | as_timestamp(0) + (60 * !input verzögerung_sonnenaufgang))
       }}
 
   # Trigger für den Sonnenaufgang
@@ -178,7 +156,7 @@ action:
 
       - conditions:
           - condition: template
-            value_template: "{{ trigger.entity_id == 'sensor.wecker_1' or trigger.entity_id == 'sensor.wecker_2' }}"
+            value_template: "{{ trigger.entity_id == 'input_datetime.weckerzeit_luke' }}"
         sequence:
           - service: cover.open_cover
             target: !input rollo
@@ -194,5 +172,4 @@ action:
     target: !input benachrichtigungsgerät
     data:
       message: >
-        {{ trigger.entity_id }} hat das Rollo geöffnet/geschlossen, weil {{ trigger.to_state.state }}
-
+        {{ trigger.entity_id }} h
