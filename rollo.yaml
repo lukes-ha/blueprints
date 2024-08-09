@@ -1,0 +1,196 @@
+blueprint:
+  name: Rollo-Steuerung basierend auf Zeit, Sonnenstand und Sensoren
+  description: Automatisiere Rollos basierend auf Sonnenstand, Wecker, Temperatur und anderen Sensoren.
+  domain: automation
+  input:
+    # Abschnitt 1: Auswahl des Rollos
+    rollo:
+      name: Rollo oder Area
+      selector:
+        target:
+          entity:
+            domain: cover
+
+    # Abschnitt 2: Auswahl eines Sonnenpositionssensors
+    sonnensensor:
+      name: Sonnenpositionssensor
+      selector:
+        entity:
+          domain: binary_sensor
+
+    # Abschnitt 3: Einstellung von Weckern mit Timestamps und Boolean
+    wecker_1:
+      name: Wecker 1
+      selector:
+        entity:
+          domain: sensor
+          device_class: timestamp
+
+    wecker_1_aktiv:
+      name: Wecker 1 aktiv
+      selector:
+        entity:
+          domain: input_boolean
+
+    wecker_2:
+      name: Wecker 2
+      selector:
+        entity:
+          domain: sensor
+          device_class: timestamp
+
+    wecker_2_aktiv:
+      name: Wecker 2 aktiv
+      selector:
+        entity:
+          domain: input_boolean
+
+    # Abschnitt 4: Verzögerung nach dem Wecker
+    verzögerung_sonnenaufgang:
+      name: Verzögerung für Sonnenaufgang (in Minuten)
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "Minuten"
+          mode: slider
+
+    # Abschnitt 5: Verzögerung für Sonnenuntergang
+    verzögerung_sonnenuntergang:
+      name: Verzögerung für Sonnenuntergang (in Minuten)
+      selector:
+        number:
+          min: 0
+          max: 120
+          unit_of_measurement: "Minuten"
+          mode: slider
+
+    # Abschnitt 6: Fensterkontakt
+    fensterkontakt:
+      name: Fensterkontaktsensor
+      selector:
+        entity:
+          domain: binary_sensor
+          device_class: opening
+
+    # Abschnitt 7: Temperaturbasierte Automatisierung
+    innen_temperatur:
+      name: Innentemperatursensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    außen_temperatur:
+      name: Außentemperatursensor
+      selector:
+        entity:
+          domain: sensor
+          device_class: temperature
+
+    wetterbericht:
+      name: Wetterbericht
+      selector:
+        entity:
+          domain: weather
+
+    sommer_temperatur:
+      name: Sommer-Temperaturschwelle
+      selector:
+        number:
+          min: 10
+          max: 35
+          unit_of_measurement: "°C"
+          mode: box
+
+    winter_temperatur:
+      name: Winter-Temperaturschwelle
+      selector:
+        number:
+          min: -10
+          max: 20
+          unit_of_measurement: "°C"
+          mode: box
+
+    # Abschnitt 8: Weitere Trigger
+    weitere_trigger:
+      name: Weitere Trigger
+      selector:
+        entity:
+          domain: binary_sensor
+
+    # Abschnitt 9: Aktionen bei Rollo-Öffnen oder -Schließen
+    aktion_bei_öffnen:
+      name: Aktion bei Rollo-Öffnen
+      selector:
+        action: {}
+
+    aktion_bei_schließen:
+      name: Aktion bei Rollo-Schließen
+      selector:
+        action: {}
+
+    # Abschnitt 10: Benachrichtigungen
+    benachrichtigungsgerät:
+      name: Benachrichtigungsgerät
+      selector:
+        device:
+          integration: mobile_app
+
+variables:
+  fruehester_wecker: >
+    {% set timestamps = [] %}
+    {% if states(input_boolean.wecker_1_aktiv) == 'on' %}
+      {% set timestamps = timestamps + [states('sensor.wecker_1')] %}
+    {% endif %}
+    {% if states(input_boolean.wecker_2_aktiv) == 'on' %}
+      {% set timestamps = timestamps + [states('sensor.wecker_2')] %}
+    {% endif %}
+    {{ timestamps | min }}
+
+trigger:
+  - platform: time
+    at: !input fruehester_wecker
+
+  - platform: state
+    entity_id: !input sonnensensor
+    to: 'on'
+
+  - platform: state
+    entity_id: !input weitere_trigger
+    to: 'on'
+
+condition:
+  - condition: state
+    entity_id: !input fensterkontakt
+    state: 'on'
+
+action:
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.entity_id == 'sensor.sonnensensor' }}"
+        sequence:
+          - service: cover.close_cover
+            target: !input rollo
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.entity_id in ['sensor.wecker_1', 'sensor.wecker_2'] }}"
+        sequence:
+          - service: cover.open_cover
+            target: !input rollo
+
+      - conditions:
+          - condition: template
+            value_template: "{{ trigger.entity_id == 'binary_sensor.fensterkontakt' and trigger.to_state.state == 'on' }}"
+        sequence:
+          - service: cover.open_cover
+            target: !input rollo
+
+  - service: notify.notify
+    target: !input benachrichtigungsgerät
+    data:
+      message: >
+        {{ trigger.entity_id }} hat das Rollo geöffnet/geschlossen, weil {{ trigger.to_state.state }}
+
