@@ -1,7 +1,6 @@
-
 blueprint:
-  name: "Rollo Steuerung nach Bedingungen"
-  description: "Steuere Rollos basierend auf unterschiedlichen Bedingungen für Öffnen und Schließen."
+  name: "Rollo Steuerung nur nach Bedingungen"
+  description: "Steuere Rollos basierend auf mehreren Bedingungen zum Öffnen und Schließen, ohne Zeittrigger."
   domain: automation
   input:
     roller_shutter:
@@ -11,45 +10,37 @@ blueprint:
         entity:
           domain: cover
 
-    # Bereich für die Bedingungen zum Öffnen
+    # Bedingungen zum Öffnen der Rollos
     open_conditions:
       name: "Bedingungen zum Öffnen"
       description: "Liste der Bedingungen, unter denen das Rollo geöffnet werden soll."
-      default: []
       selector:
         entity:
+          multiple: true
           domain: binary_sensor
 
-    # Bereich für die Bedingungen zum Schließen
+    # Bedingungen zum Schließen der Rollos
     close_conditions:
       name: "Bedingungen zum Schließen"
       description: "Liste der Bedingungen, unter denen das Rollo geschlossen werden soll."
-      default: []
       selector:
         entity:
+          multiple: true
           domain: binary_sensor
-
-    open_time:
-      name: "Öffnungszeit"
-      description: "Die Zeit, zu der das Rollo geöffnet werden soll."
-      selector:
-        time:
-
-    close_time:
-      name: "Schließzeit"
-      description: "Die Zeit, zu der das Rollo geschlossen werden soll."
-      selector:
-        time:
 
 mode: single
 max_exceeded: silent
 
 trigger:
-  - platform: time
-    at: !input 'open_time'
+  # Auslöser für das Öffnen der Rollos
+  - platform: state
+    entity_id: !input 'open_conditions'
+    to: 'on'
 
-  - platform: time
-    at: !input 'close_time'
+  # Auslöser für das Schließen der Rollos
+  - platform: state
+    entity_id: !input 'close_conditions'
+    to: 'on'
 
 condition: []
 
@@ -57,7 +48,11 @@ action:
   # Öffnen der Rollos
   - choose:
       - conditions:
-          - "{{ is_state(open_conditions, 'on') }}"
+          - condition: template
+            value_template: >
+              {% for entity_id in (open_conditions | list) %}
+              {{ is_state(entity_id, 'on') }}
+              {% endfor %}
         sequence:
           - service: cover.open_cover
             target:
@@ -66,7 +61,11 @@ action:
   # Schließen der Rollos
   - choose:
       - conditions:
-          - "{{ is_state(close_conditions, 'on') }}"
+          - condition: template
+            value_template: >
+              {% for entity_id in (close_conditions | list) %}
+              {{ is_state(entity_id, 'on') }}
+              {% endfor %}
         sequence:
           - service: cover.close_cover
             target:
