@@ -1,0 +1,72 @@
+blueprint:
+  name: "Rollo Steuerung nach Bedingungen"
+  description: "Steuere Rollos basierend auf unterschiedlichen Bedingungen für Öffnen und Schließen."
+  domain: automation
+  input:
+    roller_shutter:
+      name: "Rollo"
+      description: "Das zu steuernde Rollo."
+      selector:
+        entity:
+          domain: cover
+
+    # Bereich für die Bedingungen zum Öffnen
+    open_conditions:
+      name: "Bedingungen zum Öffnen"
+      description: "Liste der Bedingungen, unter denen das Rollo geöffnet werden soll."
+      default: []
+      selector:
+        entity:
+          domain: binary_sensor
+
+    # Bereich für die Bedingungen zum Schließen
+    close_conditions:
+      name: "Bedingungen zum Schließen"
+      description: "Liste der Bedingungen, unter denen das Rollo geschlossen werden soll."
+      default: []
+      selector:
+        entity:
+          domain: binary_sensor
+
+    open_time:
+      name: "Öffnungszeit"
+      description: "Die Zeit, zu der das Rollo geöffnet werden soll."
+      selector:
+        time:
+
+    close_time:
+      name: "Schließzeit"
+      description: "Die Zeit, zu der das Rollo geschlossen werden soll."
+      selector:
+        time:
+
+mode: single
+max_exceeded: silent
+
+trigger:
+  - platform: time
+    at: !input 'open_time'
+
+  - platform: time
+    at: !input 'close_time'
+
+condition: []
+
+action:
+  # Öffnen der Rollos
+  - choose:
+      - conditions:
+          - "{{ is_state(open_conditions, 'on') }}"
+        sequence:
+          - service: cover.open_cover
+            target:
+              entity_id: !input "roller_shutter"
+
+  # Schließen der Rollos
+  - choose:
+      - conditions:
+          - "{{ is_state(close_conditions, 'on') }}"
+        sequence:
+          - service: cover.close_cover
+            target:
+              entity_id: !input "roller_shutter"
