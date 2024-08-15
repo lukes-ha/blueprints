@@ -19,19 +19,37 @@ blueprint:
           domain: binary_sensor
 
     # Abschnitt 3: Einstellung der Weckzeit mit input_datetime
-    weckerzeit_luke:
-      name: Weckzeit Luke
+    weckerzeit_1:
+      name: Weckzeit 1
       selector:
         entity:
           domain: input_datetime
 
     wecker_1_aktiv:
-      name: Wecker aktiv
+      name: Wecker 1 aktiv
+      selector:
+        entity:
+          domain: input_boolean
+
+    weckerzeit_2:
+      name: Weckzeit 2
+      selector:
+        entity:
+          domain: input_datetime
+
+    wecker_2_aktiv:
+      name: Wecker 1 aktiv
       selector:
         entity:
           domain: input_boolean
 
     # Abschnitt 4: Verzögerung für Sonnenaufgang (kann positiv oder negativ sein)
+    Sensor_next_sonnenuntergang:
+      name: Sonnenuntergang
+      selector:
+        entity:
+          domain: sensor
+
     verzögerung_sonnenaufgang:
       name: Verzögerung für Sonnenaufgang (in Minuten)
       selector:
@@ -42,6 +60,12 @@ blueprint:
           mode: box
 
     # Abschnitt 5: Verzögerung für Sonnenuntergang (kann positiv oder negativ sein)
+    Sensor_next_sonnenaufgang:
+      name: Sonnenaufgang
+      selector:
+        entity:
+          domain: sensor
+
     verzögerung_sonnenuntergang:
       name: Verzögerung für Sonnenuntergang (in Minuten)
       selector:
@@ -99,10 +123,15 @@ blueprint:
           mode: box
 
     # Abschnitt 8: Weitere Trigger (wie in einer normalen Automation)
-    weitere_trigger:
-      name: Weitere Trigger
+    weitere_open_trigger:
+      name: Weitere Trigger zum öffnen
       selector:
         trigger: {}
+
+    weitere_close_trigger:
+      name: Weitere Trigger zum schließen
+      selector:
+        trigger: { }
 
     # Abschnitt 9: Aktionen bei Rollo-Öffnen oder -Schließen
     aktion_bei_öffnen:
@@ -123,18 +152,13 @@ blueprint:
           integration: mobile_app
 
 trigger:
-  # Trigger für die Weckzeit Luke (mit Verzögerung)
+  # Trigger für die Weckzeit Luke
   - platform: template
     value_template: >
-      {{
-        states('input_boolean.wecker_1_aktiv') == 'on' and
-        now().timestamp() >= (states('input_datetime.weckerzeit_luke') | as_timestamp(0) + (60 * states('input.verzögerung_sonnenaufgang')))
-      }}
+    ## hier soll die frühste Uhrzeit/ Wecker als Trigger genutzt werden, wenn diese aktiv sind
 
-  # Trigger für den Sonnenaufgang
-  - platform: state
-    entity_id: !input sonnensensor
-    to: 'on'
+  #trigger  für Fensterko
+
 
   # Weitere Trigger
   - !input weitere_trigger
